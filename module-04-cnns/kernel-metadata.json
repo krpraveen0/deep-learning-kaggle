@@ -1,0 +1,13 @@
+{
+  "id": "krpraveen0/dl-from-scratch-module-04-cnns",
+  "title": "Deep Learning from Scratch | Module 04: CNNs in Daily Life",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "false",
+  "enable_gpu": "true",
+  "enable_internet": "false",
+  "keywords": ["deep learning", "cnn", "computer vision", "beginner", "daily life"],
+  "dataset_sources": ["zalando-research/fashionmnist"],
+  "kernel_sources": []
+}

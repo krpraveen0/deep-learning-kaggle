@@ -1,0 +1,13 @@
+{
+  "id": "krpraveen0/dl-from-scratch-module-08-project",
+  "title": "Deep Learning from Scratch | Module 08: Capstone Project",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "false",
+  "enable_gpu": "true",
+  "enable_internet": "false",
+  "keywords": ["deep learning", "capstone", "image classifier", "beginner", "project"],
+  "dataset_sources": ["zalando-research/fashionmnist"],
+  "kernel_sources": []
+}

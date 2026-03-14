@@ -1,0 +1,13 @@
+{
+  "id": "krpraveen0/dl-from-scratch-module-06-transformers",
+  "title": "Deep Learning from Scratch | Module 06: Attention and Transformers",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "false",
+  "enable_gpu": "true",
+  "enable_internet": "false",
+  "keywords": ["deep learning", "transformers", "attention", "nlp", "beginner"],
+  "dataset_sources": [],
+  "kernel_sources": []
+}

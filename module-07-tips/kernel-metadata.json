@@ -1,0 +1,13 @@
+{
+  "id": "krpraveen0/dl-from-scratch-module-07-tips",
+  "title": "Deep Learning from Scratch | Module 07: Training Tips",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "false",
+  "enable_gpu": "false",
+  "enable_internet": "false",
+  "keywords": ["deep learning", "regularization", "training", "beginner", "tips"],
+  "dataset_sources": [],
+  "kernel_sources": []
+}
