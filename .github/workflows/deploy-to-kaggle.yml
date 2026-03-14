@@ -1,0 +1,124 @@
+name: Deploy Notebooks to Kaggle
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'module-*/**'
+      - '.github/workflows/deploy-to-kaggle.yml'
+
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Module to deploy (e.g. module-01-intro). Leave blank for auto mode.'
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Push notebooks to Kaggle
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Kaggle CLI
+        run: pip install kaggle
+
+      - name: Configure Kaggle credentials
+        run: |
+          mkdir -p ~/.kaggle
+          echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: Deploy single module (manual)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.module != ''
+        run: |
+          MODULE="${{ github.event.inputs.module }}"
+
+          if [ ! -d "$MODULE" ]; then
+            echo "Module folder not found: $MODULE"
+            exit 1
+          fi
+
+          if [ ! -f "$MODULE/notebook.ipynb" ] || [ ! -f "$MODULE/kernel-metadata.json" ]; then
+            echo "Missing notebook.ipynb or kernel-metadata.json in $MODULE"
+            exit 1
+          fi
+
+          echo "Deploying $MODULE..."
+          kaggle kernels push -p "./$MODULE"
+          echo "$MODULE deployed"
+
+      - name: Deploy changed modules (auto)
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == '')
+        run: |
+          MODULES=$(find . -name "kernel-metadata.json" -exec dirname {} \; | sort)
+
+          if [ -z "$MODULES" ]; then
+            echo "No modules found."
+            exit 0
+          fi
+
+          DEPLOYED=0
+          FAILED=0
+
+          for MODULE in $MODULES; do
+            MODULE_NAME=$(basename "$MODULE")
+
+            if [ ! -f "$MODULE/notebook.ipynb" ]; then
+              echo "Skipping $MODULE_NAME (notebook.ipynb missing)"
+              continue
+            fi
+
+            if [ "${{ github.event_name }}" = "push" ]; then
+              CHANGED=$(git diff --name-only HEAD~1 HEAD -- "$MODULE/" | wc -l)
+              if [ "$CHANGED" -eq 0 ]; then
+                echo "Skipping $MODULE_NAME (no changes)"
+                continue
+              fi
+            fi
+
+            echo "Deploying $MODULE_NAME..."
+            if kaggle kernels push -p "$MODULE"; then
+              echo "$MODULE_NAME deployed successfully"
+              DEPLOYED=$((DEPLOYED + 1))
+            else
+              echo "Failed to deploy $MODULE_NAME"
+              FAILED=$((FAILED + 1))
+            fi
+
+            sleep 5
+          done
+
+          echo "--------------------------------"
+          echo "Deployed: $DEPLOYED module(s)"
+          echo "Failed:   $FAILED module(s)"
+          echo "--------------------------------"
+
+          if [ "$FAILED" -gt 0 ]; then
+            exit 1
+          fi
+
+      - name: Check kernel statuses
+        if: success()
+        run: |
+          echo "Checking kernel statuses..."
+          sleep 20
+
+          for META in $(find . -name "kernel-metadata.json"); do
+            KERNEL_ID=$(python3 -c "import json; print(json.load(open('$META')).get('id',''))" 2>/dev/null)
+            if [ -n "$KERNEL_ID" ]; then
+              echo "Status for $KERNEL_ID"
+              kaggle kernels status "$KERNEL_ID" || true
+            fi
+          done
