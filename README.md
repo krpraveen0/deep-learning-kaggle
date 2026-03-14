@@ -44,12 +44,16 @@ This repository includes `deploy-to-kaggle.yml` to push changed modules automati
 ### GitHub Secrets
 
 1. Go to **kaggle.com → Your profile → Settings → API → API Tokens (Recommended) → Create New Token**.
-2. Copy the token value shown.
+2. Copy the token value shown (this is a JWT-style token for Kaggle CLI ≥ 1.8.0).
 3. Add a repository secret named **`KAGGLE_KEY`** and paste the token as the value.
 
 | Secret | Value |
 |---|---|
-| `KAGGLE_KEY` | Your API token from Kaggle settings |
+| `KAGGLE_KEY` | Your API token from Kaggle settings (JWT token) |
+
+> **Note:** The workflow maps `KAGGLE_KEY` to the `KAGGLE_TOKEN` environment variable,
+> which is the correct way for Kaggle CLI ≥ 1.8.0 to authenticate with new-style API tokens.
+> Do **not** use the old legacy API key (which required both a username and a key).
 
 ## Folder Structure
 
