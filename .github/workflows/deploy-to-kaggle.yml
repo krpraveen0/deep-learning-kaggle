@@ -19,8 +19,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Push notebooks to Kaggle
-    env:
-      KAGGLE_TOKEN: ${{ secrets.KAGGLE_KEY }}
 
     steps:
       - name: Checkout repository
@@ -37,12 +35,16 @@ jobs:
         run: pip install 'kaggle>=1.8.0'
 
       # ── 4. Configure Kaggle credentials ───────────────────────────────
-      # KAGGLE_TOKEN is set at the job level from the KAGGLE_KEY secret.
-      # Kaggle CLI ≥1.8.0 reads KAGGLE_TOKEN directly (JWT / new API token).
+      # Write the API key from the KAGGLE_KEY secret into ~/.kaggle/kaggle.json
+      # so that the Kaggle CLI can authenticate for all subsequent steps.
+      # python3 is used to safely serialize the key value as valid JSON.
       - name: Configure Kaggle credentials
+        env:
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           mkdir -p ~/.kaggle
-          chmod 700 ~/.kaggle
+          python3 -c "import json,os; json.dump({'key': os.environ['KAGGLE_KEY']}, open(os.path.expanduser('~/.kaggle/kaggle.json'), 'w'))"
+          chmod 600 ~/.kaggle/kaggle.json
 
       - name: Deploy single module (manual)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.module != ''
