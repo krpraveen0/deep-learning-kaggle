@@ -62,7 +62,8 @@ jobs:
       - name: Deploy changed modules (auto)
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == '')
         run: |
-          MODULES=$(find . -name "kernel-metadata.json" -exec dirname {} \; | sort)
+          # maxdepth 2 + path filter ensures root kernel-metadata.json is never picked up
+          MODULES=$(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json" -exec dirname {} \; | sort)
 
           if [ -z "$MODULES" ]; then
             echo "No modules found."
