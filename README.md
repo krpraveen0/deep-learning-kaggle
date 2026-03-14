@@ -41,10 +41,28 @@ Run the same command for any module folder.
 
 This repository includes `deploy-to-kaggle.yml` to push changed modules automatically.
 
-Set these repository secrets:
+### GitHub Secrets — Recommended (new API token)
 
-- `KAGGLE_USERNAME`
-- `KAGGLE_KEY`
+Kaggle CLI >= 1.8.0 supports the new **API Tokens (Recommended)** from Kaggle settings.
+
+1. Go to **kaggle.com → Your profile → Settings → API → API Tokens (Recommended) → Create New Token**.
+2. Kaggle downloads a `kaggle.json` file. Its contents look like: `{"key":"<token>"}`.
+3. Add a single repository secret named **`KAGGLE_TOKEN`** and paste the *entire contents* of that `kaggle.json` file as the value.
+
+| Secret | Value |
+|---|---|
+| `KAGGLE_TOKEN` | Full contents of the `kaggle.json` downloaded from Kaggle (e.g. `{"key":"abc123..."}`) |
+
+### GitHub Secrets — Legacy fallback
+
+If you are still using the old **Legacy API credentials** (username + API key), set:
+
+| Secret | Value |
+|---|---|
+| `KAGGLE_USERNAME` | Your Kaggle username |
+| `KAGGLE_KEY` | Your Kaggle API key |
+
+> **Note:** If `KAGGLE_TOKEN` is set it takes precedence over `KAGGLE_USERNAME` / `KAGGLE_KEY`.
 
 ## Folder Structure
 

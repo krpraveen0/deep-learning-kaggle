@@ -34,15 +34,28 @@ jobs:
 
       # ── 3. Install Kaggle CLI ─────────────────────────────────────────
       - name: Install Kaggle CLI
-        run: pip install kaggle
+        run: pip install 'kaggle>=1.8.0'
 
       # ── 4. Configure Kaggle credentials ───────────────────────────────
-      # Store KAGGLE_USERNAME and KAGGLE_KEY as GitHub Secrets:
-      #   Settings → Secrets → Actions → New repository secret
+      # Preferred: store your new Kaggle API token as the KAGGLE_TOKEN secret.
+      #   When you create an API Token (Recommended) on Kaggle (Settings →
+      #   API → API Tokens → Create New Token), Kaggle provides a kaggle.json
+      #   file. Store the *entire contents* of that JSON as the KAGGLE_TOKEN
+      #   repository secret.
+      #
+      # Legacy fallback: set KAGGLE_USERNAME + KAGGLE_KEY secrets instead.
       - name: Configure Kaggle credentials
+        env:
+          KAGGLE_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           mkdir -p ~/.kaggle
-          echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
+          if [ -n "$KAGGLE_TOKEN" ]; then
+            printf '%s' "$KAGGLE_TOKEN" > ~/.kaggle/kaggle.json
+          else
+            printf '{"username":"%s","key":"%s"}' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
+          fi
           chmod 600 ~/.kaggle/kaggle.json
 
       # ── 5a. Deploy a SINGLE module (manual trigger with module name) ───
