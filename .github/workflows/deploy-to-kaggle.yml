@@ -35,20 +35,14 @@ jobs:
         run: pip install 'kaggle>=1.8.0'
 
       # ── 4. Configure Kaggle credentials ───────────────────────────────
-      # Set KAGGLE_KEY to your API token (the value shown in Kaggle →
-      # Settings → API). New API Tokens (Recommended, kaggle CLI >= 1.8.0)
-      # only need KAGGLE_KEY. Legacy API credentials also require KAGGLE_USERNAME.
+      # Set KAGGLE_KEY to your API token (Kaggle → Settings → API →
+      # API Tokens (Recommended) → Create New Token).
       - name: Configure Kaggle credentials
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           mkdir -p ~/.kaggle
-          if [ -n "$KAGGLE_USERNAME" ]; then
-            printf '{"username":"%s","key":"%s"}' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
-          else
-            printf '{"key":"%s"}' "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
-          fi
+          printf '{"key":"%s"}' "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
       - name: Deploy single module (manual)
