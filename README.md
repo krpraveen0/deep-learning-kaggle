@@ -18,6 +18,12 @@ A beginner-friendly, publish-ready curriculum with 1 index notebook + 8 learning
 
 ## Kaggle Kernel IDs
 
+The `id` field in every `kernel-metadata.json` is automatically rewritten to
+`<KAGGLE_USERNAME>/<kernel-slug>` during deployment (both CI and the local
+script), so kernels always land in **your own** Kaggle account.
+
+If you are the original author (`krpraveen0`) the published slugs are:
+
 - `krpraveen0/dl-from-scratch-curriculum-index`
 - `krpraveen0/dl-from-scratch-module-01-intro`
 - `krpraveen0/dl-from-scratch-module-02-perceptrons`
@@ -27,6 +33,12 @@ A beginner-friendly, publish-ready curriculum with 1 index notebook + 8 learning
 - `krpraveen0/dl-from-scratch-module-06-transformers`
 - `krpraveen0/dl-from-scratch-module-07-tips`
 - `krpraveen0/dl-from-scratch-module-08-project`
+
+> **Note on CI log URLs**: GitHub Actions masks the value of the
+> `KAGGLE_USERNAME` secret in log output, replacing it with `***`.  The URL
+> shown — `https://www.kaggle.com/code/***/dl-from-scratch-...` — is correct;
+> `***` is your actual username, just hidden for security.  Open
+> `https://www.kaggle.com/<your-username>/code` to find all pushed kernels.
 
 ## Publish a Module Manually
 
@@ -62,7 +74,7 @@ Use this table when debugging deployment behavior.
 | `scripts/kaggle-local.sh push module-04-cnns` deploys one module after file checks | `Deploy single module (manual)` does the same via `workflow_dispatch` input |
 | `scripts/kaggle-local.sh push-all` loops through `module-*` folders | `Deploy changed modules (auto)` loops `module-*` and deploys changed modules on push |
 | Local script requires `notebook.ipynb` and `kernel-metadata.json` | Workflow uses the same file presence checks before deploy |
-| Local metadata can be normalized before push | Workflow removes optional `keywords` in CI to avoid invalid tag errors |
+| `push` / `push-all` normalise metadata (remove `keywords`, fix bool types, set `id` username) before each push | `Normalize metadata` step does the same with `scripts/normalize_metadata.py --username $KAGGLE_USERNAME` |
 
 If local deploy works but GitHub fails, first verify `KAGGLE_USERNAME` and `KAGGLE_KEY` in repository secrets.
 
