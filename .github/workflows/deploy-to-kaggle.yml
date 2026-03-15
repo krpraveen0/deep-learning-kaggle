@@ -36,9 +36,27 @@ jobs:
 
       - name: Configure Kaggle credentials
         run: |
+          if [ -z "${{ secrets.KAGGLE_USERNAME }}" ] || [ -z "${{ secrets.KAGGLE_KEY }}" ]; then
+            echo "KAGGLE_USERNAME or KAGGLE_KEY is not set in GitHub Secrets"
+            exit 1
+          fi
+
           mkdir -p ~/.kaggle
           echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
-          chmod 600 ~/.kaggle/kaggle.json
+          printf '%s' "${{ secrets.KAGGLE_KEY }}" > ~/.kaggle/access_token
+          chmod 600 ~/.kaggle/kaggle.json ~/.kaggle/access_token
+
+      - name: Verify Kaggle authentication
+        run: |
+          kaggle kernels list -m | head -n 5
+
+      - name: Normalize metadata for Kaggle compatibility
+        run: |
+          # Some tags are rejected by Kaggle; remove optional keywords field in CI.
+          for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
+            python3 -c "import json,sys; p=sys.argv[1]; d=json.load(open(p, 'r', encoding='utf-8')); d.pop('keywords', None); open(p, 'w', encoding='utf-8').write(json.dumps(d, indent=2)+'\\n')" "$META"
+            echo "Normalized metadata: $META"
+          done
 
       - name: Deploy single module (manual)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.module != ''
@@ -62,11 +80,10 @@ jobs:
       - name: Deploy changed modules (auto)
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == '')
         run: |
-          # maxdepth 2 + path filter ensures root kernel-metadata.json is never picked up
-          MODULES=$(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json" -exec dirname {} \; | sort)
+          MODULES=$(find . -maxdepth 1 -type d -name 'module-*' | sort)
 
           if [ -z "$MODULES" ]; then
-            echo "No modules found."
+            echo "No module-* folders found."
             exit 0
           fi
 
@@ -76,8 +93,8 @@ jobs:
           for MODULE in $MODULES; do
             MODULE_NAME=$(basename "$MODULE")
 
-            if [ ! -f "$MODULE/notebook.ipynb" ]; then
-              echo "Skipping $MODULE_NAME (notebook.ipynb missing)"
+            if [ ! -f "$MODULE/notebook.ipynb" ] || [ ! -f "$MODULE/kernel-metadata.json" ]; then
+              echo "Skipping $MODULE_NAME (notebook.ipynb or kernel-metadata.json missing)"
               continue
             fi
 
@@ -98,7 +115,7 @@ jobs:
               FAILED=$((FAILED + 1))
             fi
 
-            sleep 5
+            sleep 3
           done
 
           echo "--------------------------------"
@@ -114,9 +131,9 @@ jobs:
         if: success()
         run: |
           echo "Checking kernel statuses..."
-          sleep 20
+          sleep 15
 
-          for META in $(find . -name "kernel-metadata.json"); do
+          for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
             KERNEL_ID=$(python3 -c "import json; print(json.load(open('$META')).get('id',''))" 2>/dev/null)
             if [ -n "$KERNEL_ID" ]; then
               echo "Status for $KERNEL_ID"

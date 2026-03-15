@@ -7,7 +7,6 @@
   "is_private": "false",
   "enable_gpu": "true",
   "enable_internet": "false",
-  "keywords": ["deep learning", "cnn", "computer vision", "beginner", "daily life"],
   "dataset_sources": ["zalando-research/fashionmnist"],
   "kernel_sources": []
 }
