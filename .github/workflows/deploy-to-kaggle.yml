@@ -19,6 +19,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Push notebooks to Kaggle
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
 
     steps:
       - name: Checkout repository
@@ -34,22 +37,32 @@ jobs:
       - name: Install Kaggle CLI
         run: pip install 'kaggle>=1.8.0'
 
-      # ── 4. Configure Kaggle credentials ───────────────────────────────
-      # Write the API key from the KAGGLE_KEY secret into ~/.kaggle/kaggle.json
-      # so that the Kaggle CLI can authenticate for all subsequent steps.
-      # python3 is used to safely serialize the key value as valid JSON.
       - name: Configure Kaggle credentials
-        env:
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
-          if [ -z "${{ secrets.KAGGLE_USERNAME }}" ] || [ -z "${{ secrets.KAGGLE_KEY }}" ]; then
+          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
             echo "KAGGLE_USERNAME or KAGGLE_KEY is not set in GitHub Secrets"
             exit 1
           fi
 
+          umask 077
           mkdir -p ~/.kaggle
-          python3 -c "import json,os; json.dump({'key': os.environ['KAGGLE_KEY']}, open(os.path.expanduser('~/.kaggle/kaggle.json'), 'w'))"
-          chmod 600 ~/.kaggle/kaggle.json
+          python3 -c "import json,os; open(os.path.expanduser('~/.kaggle/kaggle.json'),'w',encoding='utf-8').write(json.dumps({'username': os.environ.get('KAGGLE_USERNAME',''), 'key': os.environ.get('KAGGLE_KEY','')}))"
+          printf '%s' "$KAGGLE_KEY" > ~/.kaggle/access_token
+          chmod 600 ~/.kaggle/kaggle.json ~/.kaggle/access_token
+          echo "KAGGLE_CONFIG_DIR=$HOME/.kaggle" >> "$GITHUB_ENV"
+          echo "Configured Kaggle auth (username length: ${#KAGGLE_USERNAME})"
+
+      - name: Verify Kaggle authentication
+        run: |
+          kaggle kernels list -m | head -n 5
+
+      - name: Normalize metadata for Kaggle compatibility
+        run: |
+          # Some tags are rejected by Kaggle; remove optional keywords field in CI.
+          for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
+            python3 -c "import json,sys; p=sys.argv[1]; d=json.load(open(p, 'r', encoding='utf-8')); d.pop('keywords', None); open(p, 'w', encoding='utf-8').write(json.dumps(d, indent=2)+'\\n')" "$META"
+            echo "Normalized metadata: $META"
+          done
 
       - name: Deploy single module (manual)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.module != ''
