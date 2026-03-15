@@ -46,6 +46,7 @@ jobs:
 
           umask 077
           mkdir -p ~/.kaggle
+          umask 077
           python3 -c "import json,os; open(os.path.expanduser('~/.kaggle/kaggle.json'),'w',encoding='utf-8').write(json.dumps({'username': os.environ.get('KAGGLE_USERNAME',''), 'key': os.environ.get('KAGGLE_KEY','')}))"
           printf '%s' "$KAGGLE_KEY" > ~/.kaggle/access_token
           chmod 600 ~/.kaggle/kaggle.json ~/.kaggle/access_token
