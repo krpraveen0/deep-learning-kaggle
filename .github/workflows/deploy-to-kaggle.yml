@@ -19,6 +19,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Push notebooks to Kaggle
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
 
     steps:
       - name: Checkout repository
@@ -36,15 +39,17 @@ jobs:
 
       - name: Configure Kaggle credentials
         run: |
-          if [ -z "${{ secrets.KAGGLE_USERNAME }}" ] || [ -z "${{ secrets.KAGGLE_KEY }}" ]; then
+          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
             echo "KAGGLE_USERNAME or KAGGLE_KEY is not set in GitHub Secrets"
             exit 1
           fi
 
           mkdir -p ~/.kaggle
-          echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
-          printf '%s' "${{ secrets.KAGGLE_KEY }}" > ~/.kaggle/access_token
+          python3 -c "import json,os; open(os.path.expanduser('~/.kaggle/kaggle.json'),'w',encoding='utf-8').write(json.dumps({'username': os.environ.get('KAGGLE_USERNAME',''), 'key': os.environ.get('KAGGLE_KEY','')}))"
+          printf '%s' "$KAGGLE_KEY" > ~/.kaggle/access_token
           chmod 600 ~/.kaggle/kaggle.json ~/.kaggle/access_token
+          echo "KAGGLE_CONFIG_DIR=$HOME/.kaggle" >> "$GITHUB_ENV"
+          echo "Configured Kaggle auth (username length: ${#KAGGLE_USERNAME})"
 
       - name: Verify Kaggle authentication
         run: |

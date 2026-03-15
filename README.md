@@ -39,7 +39,7 @@ Run the same command for any module folder.
 
 ## Auto Deploy with GitHub Actions
 
-This repository includes `deploy-to-kaggle.yml` to push changed modules automatically.
+This repository includes `.github/workflows/deploy-to-kaggle.yml` to push changed modules automatically.
 
 Set these repository secrets:
 
@@ -65,7 +65,9 @@ If local deploy works but GitHub fails, first verify `KAGGLE_USERNAME` and `KAGG
 
 ```text
 kaggle_workplace/
-├── deploy-to-kaggle.yml
+├── .github/
+│   └── workflows/
+│       └── deploy-to-kaggle.yml
 ├── METADATA_GUIDE.md
 ├── module-00-curriculum-index/
 │   ├── notebook.ipynb
