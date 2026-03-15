@@ -55,6 +55,21 @@ This repository includes `deploy-to-kaggle.yml` to push changed modules automati
 > which is the correct way for Kaggle CLI ≥ 1.8.0 to authenticate with new-style API tokens.
 > Do **not** use the old legacy API key (which required both a username and a key).
 
+## Local vs GitHub Parity
+
+Use this table when debugging deployment behavior.
+
+| Local Terminal Flow | GitHub Actions Flow |
+|---|---|
+| `scripts/kaggle-local.sh auth` writes `~/.kaggle/kaggle.json` and `~/.kaggle/access_token` | `Configure Kaggle credentials` step writes the same files from GitHub secrets |
+| `scripts/kaggle-local.sh test` runs a quick auth check | `Verify Kaggle authentication` step runs `kaggle kernels list -m` |
+| `scripts/kaggle-local.sh push module-04-cnns` deploys one module after file checks | `Deploy single module (manual)` does the same via `workflow_dispatch` input |
+| `scripts/kaggle-local.sh push-all` loops through `module-*` folders | `Deploy changed modules (auto)` loops `module-*` and deploys changed modules on push |
+| Local script requires `notebook.ipynb` and `kernel-metadata.json` | Workflow uses the same file presence checks before deploy |
+| Local metadata can be normalized before push | Workflow removes optional `keywords` in CI to avoid invalid tag errors |
+
+If local deploy works but GitHub fails, first verify `KAGGLE_USERNAME` and `KAGGLE_KEY` in repository secrets.
+
 ## Folder Structure
 
 ```text

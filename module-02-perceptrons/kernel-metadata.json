@@ -7,7 +7,6 @@
   "is_private": "false",
   "enable_gpu": "false",
   "enable_internet": "false",
-  "keywords": ["deep learning", "perceptron", "activation", "beginner", "daily life"],
   "dataset_sources": [],
   "kernel_sources": []
 }
