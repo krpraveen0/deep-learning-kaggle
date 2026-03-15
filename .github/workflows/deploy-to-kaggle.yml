@@ -58,13 +58,13 @@ jobs:
 
       - name: Normalize metadata for Kaggle compatibility
         run: |
-          # Remove optional keywords field (rejected by Kaggle) and ensure
-          # boolean fields are actual JSON booleans, not strings.
-          # String "false"/"true" passed to the Kaggle SDK is coerced via
-          # Python's bool(), where bool("false") == True, so notebooks
-          # pushed with "is_private": "false" are actually marked private.
+          # Remove optional keywords field (rejected by Kaggle), ensure
+          # boolean fields are actual JSON booleans, and substitute
+          # $KAGGLE_USERNAME into the "id" field so every kernel is pushed
+          # to the authenticated user's own Kaggle account rather than the
+          # hardcoded owner embedded in the repository metadata.
           for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
-            python3 scripts/normalize_metadata.py "$META"
+            python3 scripts/normalize_metadata.py "$META" --username "$KAGGLE_USERNAME"
             echo "Normalized metadata: $META"
           done
 
@@ -84,13 +84,12 @@ jobs:
           fi
 
           echo "Deploying $MODULE..."
-          PUSH_OUTPUT=$(kaggle kernels push -p "./$MODULE" 2>&1)
-          echo "$PUSH_OUTPUT"
-          if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
+          if bash scripts/push-module.sh "./$MODULE"; then
+            echo "$MODULE deployed"
+          else
             echo "Deploy failed for $MODULE"
             exit 1
           fi
-          echo "$MODULE deployed"
 
       - name: Deploy changed modules (auto)
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == '')
@@ -122,14 +121,12 @@ jobs:
             fi
 
             echo "Deploying $MODULE_NAME..."
-            PUSH_OUTPUT=$(kaggle kernels push -p "$MODULE" 2>&1)
-            echo "$PUSH_OUTPUT"
-            if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
-              echo "Failed to deploy $MODULE_NAME (error in push output)"
-              FAILED=$((FAILED + 1))
-            else
+            if bash scripts/push-module.sh "$MODULE"; then
               echo "$MODULE_NAME deployed successfully"
               DEPLOYED=$((DEPLOYED + 1))
+            else
+              echo "Failed to deploy $MODULE_NAME (error in push output)"
+              FAILED=$((FAILED + 1))
             fi
 
             sleep 3

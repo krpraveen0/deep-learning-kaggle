@@ -8,19 +8,30 @@ The Kaggle SDK coerces values via Python's ``bool()``, where
 ``bool("false") == True``, so passing string ``"false"`` would mark a
 notebook as private.
 
+Optionally substitutes the username in the ``id`` field so that kernels are
+pushed to the authenticated user's own Kaggle account rather than the
+hardcoded owner embedded in the repository metadata.
+
 Usage::
 
-    python3 scripts/normalize_metadata.py <path-to-kernel-metadata.json>
+    python3 scripts/normalize_metadata.py <path-to-kernel-metadata.json> [--username <kaggle-username>]
 """
 
+import argparse
 import json
-import sys
 
-if len(sys.argv) < 2:
-    print('Usage: normalize_metadata.py <path-to-kernel-metadata.json>', file=sys.stderr)
-    sys.exit(1)
+parser = argparse.ArgumentParser(
+    description='Normalize kernel-metadata.json for Kaggle compatibility.'
+)
+parser.add_argument('path', help='Path to kernel-metadata.json')
+parser.add_argument(
+    '--username',
+    default='',
+    help='Kaggle username to substitute into the id field (replaces the embedded owner).',
+)
+args = parser.parse_args()
 
-p = sys.argv[1]
+p = args.path
 with open(p, 'r', encoding='utf-8') as f:
     d = json.load(f)
 d.pop('keywords', None)
@@ -34,5 +45,17 @@ for field in ('is_private', 'enable_gpu', 'enable_internet'):
                 flush=True,
             )
         d[field] = val == 'true'
+
+if args.username and 'id' in d:
+    parts = d['id'].split('/', 1)
+    if len(parts) == 2:
+        d['id'] = f"{args.username}/{parts[1]}"
+    else:
+        print(
+            f'WARNING: id field in {p} does not contain a slash separator: {d["id"]!r}'
+            ' (username substitution skipped)',
+            flush=True,
+        )
+
 with open(p, 'w', encoding='utf-8') as f:
     f.write(json.dumps(d, indent=2) + '\n')

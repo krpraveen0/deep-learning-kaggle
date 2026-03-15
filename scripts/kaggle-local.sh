@@ -9,6 +9,7 @@ if [[ -x "$ROOT_DIR/venv/bin/kaggle" ]]; then
 else
   KAGGLE_CLI="kaggle"
 fi
+export KAGGLE_CLI
 
 require_env() {
   if [[ ! -f "$ENV_FILE" ]]; then
@@ -58,9 +59,11 @@ push_one() {
     exit 1
   fi
 
-  PUSH_OUTPUT=$("$KAGGLE_CLI" kernels push -p "$ROOT_DIR/$module" 2>&1)
-  echo "$PUSH_OUTPUT"
-  if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
+  python3 "$ROOT_DIR/scripts/normalize_metadata.py" \
+    "$ROOT_DIR/$module/kernel-metadata.json" \
+    --username "$KAGGLE_USERNAME"
+
+  if ! bash "$ROOT_DIR/scripts/push-module.sh" "$ROOT_DIR/$module"; then
     echo "Push failed for $module"
     exit 1
   fi
@@ -75,10 +78,12 @@ push_all() {
       continue
     fi
 
+    python3 "$ROOT_DIR/scripts/normalize_metadata.py" \
+      "$module/kernel-metadata.json" \
+      --username "$KAGGLE_USERNAME"
+
     echo "Deploying $(basename "$module")..."
-    PUSH_OUTPUT=$("$KAGGLE_CLI" kernels push -p "$module" 2>&1)
-    echo "$PUSH_OUTPUT"
-    if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
+    if ! bash "$ROOT_DIR/scripts/push-module.sh" "$module"; then
       failed=$((failed + 1))
     fi
     sleep 3
