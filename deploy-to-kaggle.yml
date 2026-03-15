@@ -34,15 +34,17 @@ jobs:
 
       # ── 3. Install Kaggle CLI ─────────────────────────────────────────
       - name: Install Kaggle CLI
-        run: pip install kaggle
+        run: pip install 'kaggle>=1.8.0'
 
       # ── 4. Configure Kaggle credentials ───────────────────────────────
-      # Store KAGGLE_USERNAME and KAGGLE_KEY as GitHub Secrets:
-      #   Settings → Secrets → Actions → New repository secret
+      # Set KAGGLE_KEY to your API token (Kaggle → Settings → API →
+      # API Tokens (Recommended) → Create New Token).
       - name: Configure Kaggle credentials
+        env:
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           mkdir -p ~/.kaggle
-          echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
+          printf '{"key":"%s"}' "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
       # ── 5a. Deploy a SINGLE module (manual trigger with module name) ───
