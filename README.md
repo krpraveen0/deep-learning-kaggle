@@ -39,21 +39,17 @@ Run the same command for any module folder.
 
 ## Auto Deploy with GitHub Actions
 
-This repository includes `deploy-to-kaggle.yml` to push changed modules automatically.
+This repository includes `.github/workflows/deploy-to-kaggle.yml` to push changed modules automatically.
 
 ### GitHub Secrets
 
-1. Go to **kaggle.com → Your profile → Settings → API → API Tokens (Recommended) → Create New Token**.
-2. Copy the token value shown (this is a JWT-style token for Kaggle CLI ≥ 1.8.0).
-3. Add a repository secret named **`KAGGLE_KEY`** and paste the token as the value.
+1. Go to **kaggle.com → Your profile → Settings → API** and download `kaggle.json`.
+2. Add the following repository secrets (**Settings → Secrets → Actions → New repository secret**):
 
 | Secret | Value |
 |---|---|
-| `KAGGLE_KEY` | Your API token from Kaggle settings (JWT token) |
-
-> **Note:** The workflow maps `KAGGLE_KEY` to the `KAGGLE_TOKEN` environment variable,
-> which is the correct way for Kaggle CLI ≥ 1.8.0 to authenticate with new-style API tokens.
-> Do **not** use the old legacy API key (which required both a username and a key).
+| `KAGGLE_USERNAME` | Your Kaggle username |
+| `KAGGLE_KEY` | Your Kaggle API key from `kaggle.json` |
 
 ## Local vs GitHub Parity
 
@@ -74,7 +70,9 @@ If local deploy works but GitHub fails, first verify `KAGGLE_USERNAME` and `KAGG
 
 ```text
 kaggle_workplace/
-├── deploy-to-kaggle.yml
+├── .github/
+│   └── workflows/
+│       └── deploy-to-kaggle.yml
 ├── METADATA_GUIDE.md
 ├── module-00-curriculum-index/
 │   ├── notebook.ipynb
