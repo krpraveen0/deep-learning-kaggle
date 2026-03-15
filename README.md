@@ -41,10 +41,15 @@ Run the same command for any module folder.
 
 This repository includes `.github/workflows/deploy-to-kaggle.yml` to push changed modules automatically.
 
-Set these repository secrets:
+### GitHub Secrets
 
-- `KAGGLE_USERNAME`
-- `KAGGLE_KEY`
+1. Go to **kaggle.com → Your profile → Settings → API** and download `kaggle.json`.
+2. Add the following repository secrets (**Settings → Secrets → Actions → New repository secret**):
+
+| Secret | Value |
+|---|---|
+| `KAGGLE_USERNAME` | Your Kaggle username |
+| `KAGGLE_KEY` | Your Kaggle API key from `kaggle.json` |
 
 ## Local vs GitHub Parity
 
