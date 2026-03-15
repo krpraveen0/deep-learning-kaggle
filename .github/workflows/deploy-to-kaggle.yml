@@ -64,19 +64,7 @@ jobs:
           # Python's bool(), where bool("false") == True, so notebooks
           # pushed with "is_private": "false" are actually marked private.
           for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
-            python3 - "$META" <<'PYEOF'
-import json, sys
-p = sys.argv[1]
-d = json.load(open(p, 'r', encoding='utf-8'))
-d.pop('keywords', None)
-for field in ('is_private', 'enable_gpu', 'enable_internet'):
-    if field in d and isinstance(d[field], str):
-        val = d[field].strip().lower()
-        if val not in ('true', 'false'):
-            print(f'WARNING: unexpected value for {field} in {p}: {d[field]!r} (treating as false)', flush=True)
-        d[field] = val == 'true'
-open(p, 'w', encoding='utf-8').write(json.dumps(d, indent=2) + '\n')
-PYEOF
+            python3 scripts/normalize_metadata.py "$META"
             echo "Normalized metadata: $META"
           done
 
