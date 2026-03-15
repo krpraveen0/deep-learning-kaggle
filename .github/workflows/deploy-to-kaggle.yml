@@ -58,9 +58,25 @@ jobs:
 
       - name: Normalize metadata for Kaggle compatibility
         run: |
-          # Some tags are rejected by Kaggle; remove optional keywords field in CI.
+          # Remove optional keywords field (rejected by Kaggle) and ensure
+          # boolean fields are actual JSON booleans, not strings.
+          # String "false"/"true" passed to the Kaggle SDK is coerced via
+          # Python's bool(), where bool("false") == True, so notebooks
+          # pushed with "is_private": "false" are actually marked private.
           for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
-            python3 -c "import json,sys; p=sys.argv[1]; d=json.load(open(p, 'r', encoding='utf-8')); d.pop('keywords', None); open(p, 'w', encoding='utf-8').write(json.dumps(d, indent=2)+'\\n')" "$META"
+            python3 - "$META" <<'PYEOF'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p, 'r', encoding='utf-8'))
+d.pop('keywords', None)
+for field in ('is_private', 'enable_gpu', 'enable_internet'):
+    if field in d and isinstance(d[field], str):
+        val = d[field].strip().lower()
+        if val not in ('true', 'false'):
+            print(f'WARNING: unexpected value for {field} in {p}: {d[field]!r} (treating as false)', flush=True)
+        d[field] = val == 'true'
+open(p, 'w', encoding='utf-8').write(json.dumps(d, indent=2) + '\n')
+PYEOF
             echo "Normalized metadata: $META"
           done
 
@@ -80,7 +96,12 @@ jobs:
           fi
 
           echo "Deploying $MODULE..."
-          kaggle kernels push -p "./$MODULE"
+          PUSH_OUTPUT=$(kaggle kernels push -p "./$MODULE" 2>&1)
+          echo "$PUSH_OUTPUT"
+          if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
+            echo "Deploy failed for $MODULE"
+            exit 1
+          fi
           echo "$MODULE deployed"
 
       - name: Deploy changed modules (auto)
@@ -113,12 +134,14 @@ jobs:
             fi
 
             echo "Deploying $MODULE_NAME..."
-            if kaggle kernels push -p "$MODULE"; then
+            PUSH_OUTPUT=$(kaggle kernels push -p "$MODULE" 2>&1)
+            echo "$PUSH_OUTPUT"
+            if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
+              echo "Failed to deploy $MODULE_NAME (error in push output)"
+              FAILED=$((FAILED + 1))
+            else
               echo "$MODULE_NAME deployed successfully"
               DEPLOYED=$((DEPLOYED + 1))
-            else
-              echo "Failed to deploy $MODULE_NAME"
-              FAILED=$((FAILED + 1))
             fi
 
             sleep 3

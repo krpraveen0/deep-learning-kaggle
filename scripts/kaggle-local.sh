@@ -58,7 +58,12 @@ push_one() {
     exit 1
   fi
 
-  "$KAGGLE_CLI" kernels push -p "$ROOT_DIR/$module"
+  PUSH_OUTPUT=$("$KAGGLE_CLI" kernels push -p "$ROOT_DIR/$module" 2>&1)
+  echo "$PUSH_OUTPUT"
+  if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
+    echo "Push failed for $module"
+    exit 1
+  fi
 }
 
 push_all() {
@@ -71,7 +76,9 @@ push_all() {
     fi
 
     echo "Deploying $(basename "$module")..."
-    if ! "$KAGGLE_CLI" kernels push -p "$module"; then
+    PUSH_OUTPUT=$("$KAGGLE_CLI" kernels push -p "$module" 2>&1)
+    echo "$PUSH_OUTPUT"
+    if echo "$PUSH_OUTPUT" | grep -qi "kernel push error\|error:"; then
       failed=$((failed + 1))
     fi
     sleep 3

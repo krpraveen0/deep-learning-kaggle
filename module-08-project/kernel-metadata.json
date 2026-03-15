@@ -4,9 +4,11 @@
   "code_file": "notebook.ipynb",
   "language": "python",
   "kernel_type": "notebook",
-  "is_private": "false",
-  "enable_gpu": "true",
-  "enable_internet": "false",
-  "dataset_sources": ["zalando-research/fashionmnist"],
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_internet": false,
+  "dataset_sources": [
+    "zalando-research/fashionmnist"
+  ],
   "kernel_sources": []
 }
