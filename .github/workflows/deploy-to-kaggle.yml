@@ -34,6 +34,7 @@ jobs:
     env:
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
       KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout repository
@@ -113,6 +114,8 @@ jobs:
           echo "Deploying $MODULE..."
           if bash scripts/push-module.sh "./$MODULE"; then
             echo "$MODULE deployed"
+            KERNEL_ID=$(python3 -c "import json; print(json.load(open('$MODULE/kernel-metadata.json')).get('id',''))" 2>/dev/null)
+            [ -n "$KERNEL_ID" ] && echo "$KERNEL_ID" >> "$RUNNER_TEMP/deployed_kernels.txt"
           else
             echo "Deploy failed for $MODULE"
             exit 1
@@ -151,6 +154,8 @@ jobs:
             if bash scripts/push-module.sh "$MODULE"; then
               echo "$MODULE_NAME deployed successfully"
               DEPLOYED=$((DEPLOYED + 1))
+              KERNEL_ID=$(python3 -c "import json; print(json.load(open('$MODULE/kernel-metadata.json')).get('id',''))" 2>/dev/null)
+              [ -n "$KERNEL_ID" ] && echo "$KERNEL_ID" >> "$RUNNER_TEMP/deployed_kernels.txt"
             else
               echo "Failed to deploy $MODULE_NAME (error in push output)"
               FAILED=$((FAILED + 1))
@@ -172,12 +177,21 @@ jobs:
         if: success()
         run: |
           echo "Checking kernel statuses..."
-          sleep 15
 
-          for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
-            KERNEL_ID=$(python3 -c "import json; print(json.load(open('$META')).get('id',''))" 2>/dev/null)
-            if [ -n "$KERNEL_ID" ]; then
-              echo "Status for $KERNEL_ID"
-              kaggle kernels status "$KERNEL_ID" || true
+          if [ ! -f "$RUNNER_TEMP/deployed_kernels.txt" ]; then
+            echo "No kernels were deployed in this run, skipping status check."
+            exit 0
+          fi
+
+          sleep 30
+
+          while IFS= read -r KERNEL_ID; do
+            [ -n "$KERNEL_ID" ] || continue
+            echo "Status for $KERNEL_ID"
+            STATUS_OUTPUT=$(kaggle kernels status "$KERNEL_ID" 2>&1) || true
+            if echo "$STATUS_OUTPUT" | grep -qi "404 Client Error\|404.*Not Found"; then
+              echo "$KERNEL_ID: no active session yet (kernel is queued or just created)"
+            else
+              echo "$STATUS_OUTPUT"
             fi
-          done
+          done < "$RUNNER_TEMP/deployed_kernels.txt"
