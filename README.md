@@ -107,3 +107,61 @@ kaggle_workplace/
 - Every notebook has a short concept section, runnable code, and a practice task.
 - Training settings are intentionally runtime-tuned for Kaggle quick runs.
 - Keep modules private while iterating, then set `"is_private": "false"` to publish.
+
+## Runtime Configuration
+
+Each notebook starts with a **configuration cell** that reads settings from
+environment variables (with sensible defaults). You never need to edit
+notebook source to change these — just set the relevant variable before
+running.
+
+### Notebook-level variables
+
+| Variable | Default | Modules | Description |
+|---|---|---|---|
+| `USE_GPU` | `true` | 04, 05, 06, 08 | Set to `false` to force CPU-only execution |
+| `EPOCHS` | varies | all | Number of training epochs |
+| `BATCH_SIZE` | `128` | 04, 08 | Mini-batch size |
+| `TRAIN_SAMPLES` | varies | 04, 08 | Number of training examples to use |
+| `TEST_SAMPLES` | varies | 04, 08 | Number of test examples to use |
+| `WINDOW` | `4` | 05 | Sequence window size for the LSTM |
+| `PATIENCE` | `8` | 07 | EarlyStopping patience |
+| `LEARNING_RATE` | `0.001` | 03 | Optimizer learning rate |
+
+> **Important:** `USE_GPU=false` must be set *before* TensorFlow is imported.
+> Run the configuration cell first, then the training cell (normal top-to-bottom order).
+
+**Example — disable GPU and reduce epochs for a quick local test:**
+
+```bash
+export USE_GPU=false
+export EPOCHS=1
+```
+
+Or, if you are using a `.env` file with `python-dotenv`, copy `.env.example`
+to `.env` and adjust the values there.
+
+### Kaggle metadata overrides (deployment time)
+
+The `enable_gpu`, `enable_internet`, and `is_private` fields live in each
+module's `kernel-metadata.json` file. You can override them at deploy time
+**without** editing the committed files:
+
+**Via `workflow_dispatch` inputs (GitHub Actions UI):**
+
+When triggering a manual run, fill in the optional inputs:
+
+| Input | Description |
+|---|---|
+| `enable_gpu` | `true` or `false` (blank = use per-module default) |
+| `enable_internet` | `true` or `false` (blank = use per-module default) |
+| `is_private` | `true` or `false` (blank = use per-module default) |
+
+**Via `normalize_metadata.py` flags (local / scripted):**
+
+```bash
+python3 scripts/normalize_metadata.py module-04-cnns/kernel-metadata.json \
+    --username myusername \
+    --enable-gpu false \
+    --is-private true
+```
