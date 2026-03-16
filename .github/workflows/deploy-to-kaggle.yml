@@ -14,6 +14,18 @@ on:
         description: 'Module to deploy (e.g. module-01-intro). Leave blank for auto mode.'
         required: false
         default: ''
+      enable_gpu:
+        description: 'Override enable_gpu for all modules (true/false). Leave blank to use per-module metadata defaults.'
+        required: false
+        default: ''
+      enable_internet:
+        description: 'Override enable_internet for all modules (true/false). Leave blank to use metadata defaults.'
+        required: false
+        default: ''
+      is_private:
+        description: 'Override is_private for all modules (true/false). Leave blank to use metadata defaults.'
+        required: false
+        default: ''
 
 jobs:
   deploy:
@@ -63,8 +75,23 @@ jobs:
           # $KAGGLE_USERNAME into the "id" field so every kernel is pushed
           # to the authenticated user's own Kaggle account rather than the
           # hardcoded owner embedded in the repository metadata.
+          #
+          # Runtime overrides (workflow_dispatch inputs) take precedence over
+          # the committed metadata defaults when provided.
+          OVERRIDE_ARGS=""
+          if [ -n "${{ github.event.inputs.enable_gpu }}" ]; then
+            OVERRIDE_ARGS="$OVERRIDE_ARGS --enable-gpu ${{ github.event.inputs.enable_gpu }}"
+          fi
+          if [ -n "${{ github.event.inputs.enable_internet }}" ]; then
+            OVERRIDE_ARGS="$OVERRIDE_ARGS --enable-internet ${{ github.event.inputs.enable_internet }}"
+          fi
+          if [ -n "${{ github.event.inputs.is_private }}" ]; then
+            OVERRIDE_ARGS="$OVERRIDE_ARGS --is-private ${{ github.event.inputs.is_private }}"
+          fi
+
           for META in $(find . -maxdepth 2 -path './module-*' -name "kernel-metadata.json"); do
-            python3 scripts/normalize_metadata.py "$META" --username "$KAGGLE_USERNAME"
+            # shellcheck disable=SC2086
+            python3 scripts/normalize_metadata.py "$META" --username "$KAGGLE_USERNAME" $OVERRIDE_ARGS
             echo "Normalized metadata: $META"
           done
 
